@@ -17,6 +17,12 @@ export enum SourceType {
     PROJECT = 'PROJECT',
 }
 
+export const sourceTypesList = [
+    SourceType.MANUAL,
+    SourceType.MES,
+    SourceType.PROJECT,
+]
+
 export enum ValidationStatus {
     NOT_PROCESSED = 'NOT_PROCESSED',
     PENDING = 'PENDING',

@@ -32,7 +32,8 @@
     "joi": "^17.13.3",
     "nats": "^2.28.2",
     "reflect-metadata": "^0.2.0",
-    "rxjs": "^7.8.1"
+    "rxjs": "^7.8.1",
+    "simple-statistics": "^7.8.5"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.0.0",

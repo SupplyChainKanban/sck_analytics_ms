@@ -55,3 +55,4 @@ model ProcessedData {
   updateAt        DateTime @updatedAt
 }
 
+//TODO: Añadir la tabla de AnalysisData
