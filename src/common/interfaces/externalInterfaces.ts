@@ -8,14 +8,14 @@ export interface DataSourceInterface {
 
 export interface MesDataInterface {
     materialID: number,
-    materialName: string,
     materialCategory: string,
+    materialName: string,
     materialQuantity: number,// Cantidad de material consumido en la operación
-    lotNumber: string, // Identificador del lote del material para trazabilidad
     consumptionDate: Date, //Fecha y hora de consumo de material
     remainingStock: number, // Cantidad de stock restante después del consumo registrado
     unitOfMeasure: string, // Unidad de medida del material
-    supplierLotNumber: string, // Número de lote asignado por el proveedor
+    // lotNumber: string, // Identificador del lote del material para trazabilidad
+    // supplierLotNumber: string, // Número de lote asignado por el proveedor
 }
 
 export interface ProjectDataInterface {
@@ -30,13 +30,28 @@ export interface ProjectDataInterface {
 }
 
 export interface ManualDataInterface {
-    purchaseID: number,// Identificador único de la compra realizada
     materialID: number,
-    materialName: string,
     materialCategory: string,
-    supplierName: string,// Nombre del proveedor que suministró el material
-    purchaseQuantity: number, // Cantidad comprada del material
+    materialName: string,
     purchaseDate: Date,// Fecha y hora de la compra
-    purchaseLocation: string, // Ubicación de la compra
-    paymentMethod: string, // Método de pago utilizado
+    purchaseQuantity: number, // Cantidad comprada del material
+    purchaseID: number,// Identificador único de la compra realizada
+    // supplierName: string,// Nombre del proveedor que suministró el material
+    // purchaseLocation: string, // Ubicación de la compra
+    // paymentMethod: string, // Método de pago utilizado
+}
+
+export interface ProcessedData {
+    materialID: number,
+    materialCategory: string,
+    materialName: string,
+    processedQuantity: number, //* Cantidad procesada: Comprada o consumida
+    processedDate: Date, //* Fecha de compra o de consumo de material
+
+    purchaseID?: number,
+    remainingStock?: number,
+    unitOfMeasure?: string,
+    costPerUnit?: number,
+    projectID?: number,
+    budgetAllocated?: number,
 }

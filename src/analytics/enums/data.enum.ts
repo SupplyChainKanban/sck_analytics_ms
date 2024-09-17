@@ -16,3 +16,9 @@ export enum SourceType {
     MANUAL = 'MANUAL',
     PROJECT = 'PROJECT',
 }
+
+export enum ValidationStatus {
+    NOT_PROCESSED = 'NOT_PROCESSED',
+    PENDING = 'PENDING',
+    PROCESSED = 'PROCESSED',
+}

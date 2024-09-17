@@ -1,0 +1,57 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["omitApi"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+enum ProcessedDataStatus {
+  PENDING
+  PROCESSED
+}
+
+enum ProcessedDataPriority {
+  HIGH
+  MEDIUM
+  LOW
+}
+enum SourceTypes {
+  MES
+  MANUAL
+  PROJECT
+}
+
+model ProcessedData {
+  id                String  @id @default(uuid())
+  rawDataId         String
+  sourceType        SourceTypes
+
+  materialID        Int
+  materialCategory  String
+  materialName      String
+  processedQuantity Int
+  processedDate     DateTime
+
+  purchaseID        Int? 
+  remainingStock    Int?
+  unitOfMeasure     String?
+  costPerUnit       Float?
+  projectID         Int?
+  budgetAllocated   Float?
+
+  priority        ProcessedDataPriority
+  status          ProcessedDataStatus @default(PENDING)
+  createdAt       DateTime @default(now())
+  updateAt        DateTime @updatedAt
+}
+
