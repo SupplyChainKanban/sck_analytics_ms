@@ -1,5 +1,5 @@
 import { SourceTypes } from "@prisma/client";
-import { IsEnum, IsNotEmpty, IsNumber, IsString, IsUUID } from "class-validator";
+import { IsDate, IsEnum, IsNotEmpty, IsNumber, IsString, IsUUID } from "class-validator";
 import { sourceTypesList } from "../enums/data.enum";
 
 export class DataAnalysisDto {
@@ -15,6 +15,14 @@ export class DataAnalysisDto {
 
     @IsNotEmpty()
     @IsString()
+    public materialName: string;
+
+    @IsNotEmpty()
+    @IsString()
     @IsUUID()
     public processedDataId: string;
+
+    @IsNotEmpty()
+    @IsDate()
+    public processedDate: Date;
 }

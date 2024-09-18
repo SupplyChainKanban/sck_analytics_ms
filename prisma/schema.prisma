@@ -31,7 +31,7 @@ enum SourceTypes {
   PROJECT
 }
 
-model ProcessedData {
+model processedData {
   id                String  @id @default(uuid())
   rawDataId         String
   sourceType        SourceTypes
@@ -53,6 +53,28 @@ model ProcessedData {
   status          ProcessedDataStatus @default(PENDING)
   createdAt       DateTime @default(now())
   updateAt        DateTime @updatedAt
+  dataAnalytics   dataAnalytics?
 }
 
 //TODO: Añadir la tabla de AnalysisData
+
+model dataAnalytics {
+
+  id                        String @id @default(uuid())
+
+  materialID                Int
+  materialName              String
+
+
+  totalQuantityUsed         Int
+  totalQuantityPurchased    Int
+  avgDailyUsed              Int @default(0)
+  lastPurchasedDate         DateTime?
+
+
+  processedDate             DateTime
+  analysisDate              DateTime @default(now())
+  processedData             processedData @relation(fields: [processedDataId], references: [id])
+  processedDataId           String        @unique
+
+}

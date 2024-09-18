@@ -8,6 +8,8 @@ import { SourceType, ValidationStatus } from './enums/data.enum';
 import { PrismaClient, SourceTypes } from '@prisma/client';
 import { getProcessedData } from 'src/common/helpers/processData';
 import { sum } from 'simple-statistics';
+import { ProcessedDataToAnalysisInterface } from 'src/common/interfaces';
+import { calculateAverageDailyUsed } from 'src/common/helpers';
 
 @Injectable()
 export class AnalyticsService extends PrismaClient implements OnModuleInit {
@@ -44,7 +46,13 @@ export class AnalyticsService extends PrismaClient implements OnModuleInit {
       })
 
       this.client.emit('update.validationResult.status', { id: validationResultId, status: ValidationStatus.PROCESSED })
-      this.client.emit('dataAnalysis', { processedDataId: id, dataSource: dataSource.sourceType, materialID: validatedData.materialID });
+      this.client.emit('dataAnalysis', {
+        processedDataId: id,
+        dataSource: dataSource.sourceType,
+        materialID: processedData.materialID,
+        materialName: processedData.materialName,
+        processedDate: processedData.processedDate,
+      });
       return;
     } catch (error) {
       this.client.emit('update.validationResult.status', { id: validationResultId, status: ValidationStatus.NOT_PROCESSED })
@@ -53,34 +61,93 @@ export class AnalyticsService extends PrismaClient implements OnModuleInit {
   }
 
   async runAnalysis(dataAnalysisDto: DataAnalysisDto) {
-    console.log({ dataAnalysisDto })
-    const { materialID, dataSource, processedDataId } = dataAnalysisDto;
-    let trend: string;
-    let totalPurchases: number | null = null;
+    const { materialID, materialName, processedDate, dataSource, processedDataId } = dataAnalysisDto;
 
-    //* 1. Consultar el último registro del material ID ordenado por processedDate y extraer totalUsed, total_purchased, lastPurchasedDate por ahora
+    const lastRegister = await this.dataAnalytics.findFirst({
+      where: {
+        materialID: materialID,
+      },
+      orderBy: {
+        processedDate: 'desc'
+      },
+      select: {
+        totalQuantityUsed: true,
+        totalQuantityPurchased: true,
+        lastPurchasedDate: true,
+        avgDailyUsed: true,
+      }
+    })
+    console.log({ lastRegister });
+    let totalQuantityUsed: number = lastRegister?.totalQuantityUsed || 0;
+    let totalQuantityPurchased: number = lastRegister?.totalQuantityPurchased || 0;
+    let lastPurchasedDate: Date | null = lastRegister?.lastPurchasedDate || null;
+    let avgDailyUsed: number = lastRegister?.avgDailyUsed || 0;
 
 
-    //* 2. Dependiendo de la fuente, se va a construir la nueva entrada. 
-    //* Si es la fuente manual, se calculará las compras, osea los purchasesquantity, y se actualiza el lastPurchasedDate, el resto se deja igual
-    //* Si es la fuente MES, se calculará el totalUsado y nada más por ahora.
-    //* Si es la fuente PROJECT, se calculará el total el totalusado y nada más por ahora
+    console.log({ totalQuantityUsed, totalQuantityPurchased, lastPurchasedDate });
+
+    //* 1. Obtener los registros históricos del material
+    const totalData: ProcessedDataToAnalysisInterface[] = await this.processedData.findMany({
+      where: { materialID },
+      orderBy: { processedDate: 'desc' },
+      select: { id: true, sourceType: true, materialID: true, processedQuantity: true, processedDate: true }
+    })
+    // console.log({ totalData })
+
+    //* 5. 
+
     switch (dataSource) {
       case SourceType.MANUAL:
-        totalPurchases = await this.calculateTotalQuantity(materialID, dataSource);
+        totalQuantityPurchased = await this.calculateTotalQuantity(materialID, dataSource);
+        lastPurchasedDate = (await this.processedData.findFirst({
+          where: { materialID },
+          orderBy: { processedDate: 'desc' },
+          select: { processedDate: true }
+        })).processedDate
+        //* 4. Calcular la frecuencia promedio de compras 
 
         break;
       case SourceType.MES:
+        totalQuantityUsed = await this.calculateTotalQuantity(materialID, dataSource);
+        //* 2. Calcular el consumo promedio diario
+        avgDailyUsed = calculateAverageDailyUsed(totalData, totalQuantityUsed)
+        console.log({ avgDailyUsed })
+
+        //* 3. Calcular la tendencia de consumo
 
         break;
       case SourceType.PROJECT:
+        totalQuantityUsed = await this.calculateTotalQuantity(materialID, dataSource);
+        //* 2. Calcular el consumo promedio diario
+        avgDailyUsed = calculateAverageDailyUsed(totalData, totalQuantityUsed)
+        //* 3. Calcular la tendencia de consumo
 
         break;
       default:
         break;
     }
 
+    console.log({ totalQuantityUsed, totalQuantityPurchased, lastPurchasedDate });
     //* 3. Se creará el registro de la tabla de DataAnalysis
+    await this.dataAnalytics.create({
+      data: {
+        materialID,
+        materialName,
+        processedDate,
+
+
+        totalQuantityUsed,
+        totalQuantityPurchased,
+        lastPurchasedDate,
+        avgDailyUsed,
+
+        processedData: {
+          connect: {
+            id: processedDataId,
+          }
+        }
+      }
+    })
 
     //* 4. Se enviará el emit para poder realizar la predicción dándole las variables necesarias para poder realizar la predicción
 
@@ -100,8 +167,31 @@ export class AnalyticsService extends PrismaClient implements OnModuleInit {
       },
       where: { materialID, sourceType: dataSource }
     })
-    console.log({ quantity })
     // const totalquantity = sum(quantity.map((data) => data.processedQuantity))
     return quantity._sum.processedQuantity;
   }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }
