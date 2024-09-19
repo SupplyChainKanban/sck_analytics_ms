@@ -1,6 +1,7 @@
 import { linearRegression, linearRegressionLine } from "simple-statistics";
 import { ProcessedDataToAnalysisInterface } from "../interfaces";
 import { SourceType } from "src/analytics/enums/data.enum";
+import { getDaysBetween, getTotalDaysBetween } from "./";
 
 export const getRecommendation = (usedTrend: string, avgDailyUsed: number): string => {
     switch (usedTrend) {
@@ -17,9 +18,7 @@ export const getRecommendation = (usedTrend: string, avgDailyUsed: number): stri
 
 export const calculateAverageTimeBetweenPurchases = (totalData: ProcessedDataToAnalysisInterface[]): number => {
     let totalDays = 0;
-    const totalManualData = totalData.filter((data) => {
-        return data.sourceType === SourceType.MANUAL
-    })
+    const totalManualData = totalData.filter((data) => data.sourceType === SourceType.MANUAL)
 
     for (let i = 1; i < totalManualData.length; i++) {
         totalDays += getDaysBetween(new Date(totalManualData[i].processedDate), new Date(totalManualData[i - 1].processedDate));
@@ -34,7 +33,6 @@ export const detectUsedTrend = (totalData: ProcessedDataToAnalysisInterface[]): 
 
     const dates = totalData.map((data) => data.processedDate.getTime()).reverse()
     const quantities = totalData.map((data) => data.processedQuantity).reverse()
-
     const regression = linearRegression(dates.map((date, index) => [date, quantities[index]]))
     const trend = linearRegressionLine(regression);
     const slope = regression.m;
@@ -44,25 +42,11 @@ export const detectUsedTrend = (totalData: ProcessedDataToAnalysisInterface[]): 
     } else if (slope < 0) {
         return 'decreasing';
     }
-    return 'stable'
+    return 'stable';
 }
-
-
-
 
 export const calculateAverageDailyUsed = (totalData: ProcessedDataToAnalysisInterface[], totalQuantityUsed: number): number => {
     const totalDays = getTotalDaysBetween(totalData)
     return Math.round(totalQuantityUsed / totalDays);
 }
 
-const getTotalDaysBetween = (totalData: ProcessedDataToAnalysisInterface[]) => {
-    const startDate = new Date(totalData[totalData.length - 1].processedDate);
-    const endDate = new Date(totalData[0].processedDate);
-    return getDaysBetween(startDate, endDate);
-}
-
-const getDaysBetween = (startDate: Date, endDate: Date): number => {
-    const DAY_IN_MILLISECONDS = 1000 * 60 * 60 * 24
-    const differenceMs = Math.abs(startDate.getTime() - endDate.getTime());
-    return Math.round(differenceMs / DAY_IN_MILLISECONDS);
-}

@@ -2,7 +2,7 @@ import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
 import { SCK_NATS_SERVICE } from 'src/config';
-import { DataSourceInterface, handleExceptions, ManualDataInterface, MesDataInterface, ProcessedData, ProjectDataInterface } from 'src/common';
+import { DataSourceInterface, handleExceptions, ProcessedDataInterface } from 'src/common';
 import { CreateProcessedDataDto, DataAnalysisDto, ProcessDataDto } from './dto';
 import { SourceType, ValidationStatus } from './enums/data.enum';
 import { PrismaClient, SourceTypes } from '@prisma/client';
@@ -31,7 +31,7 @@ export class AnalyticsService extends PrismaClient implements OnModuleInit {
     try {
       const rawData = await firstValueFrom(this.client.send({ cmd: 'findOneRawData' }, { id: rawDataId }))
       const dataSource: DataSourceInterface = rawData.dataSource;
-      const processedData: ProcessedData = await getProcessedData(dataSource, validatedData)
+      const processedData: ProcessedDataInterface = await getProcessedData(dataSource, validatedData)
 
       const { id } = await this.processedData.create({
         data: {
@@ -149,6 +149,7 @@ export class AnalyticsService extends PrismaClient implements OnModuleInit {
         lastPurchasedDate,
         avgDailyUsed,
         usedTrend,
+        avgTimeBetweenPurchases,
         recommendation,
 
         processedData: {

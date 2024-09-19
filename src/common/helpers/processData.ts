@@ -1,9 +1,9 @@
 import { CreateProcessedDataDto } from "src/analytics/dto"
-import { DataSourceInterface, ProcessedData } from "../interfaces/externalInterfaces"
+import { DataSourceInterface, ProcessedDataInterface } from "../interfaces/externalInterfaces"
 import { SourceType } from "src/analytics/enums/data.enum";
 
 export const getProcessedData = async (dataSource: DataSourceInterface, validatedData: CreateProcessedDataDto) => {
-    let processedData: ProcessedData;
+    let processedData: ProcessedDataInterface;
 
     switch (dataSource.sourceType) {
         case SourceType.MANUAL:
@@ -23,10 +23,10 @@ export const getProcessedData = async (dataSource: DataSourceInterface, validate
     return processedData;
 }
 
-const processManualData = async (manualData: CreateProcessedDataDto): Promise<ProcessedData> => {
+const processManualData = async (manualData: CreateProcessedDataDto): Promise<ProcessedDataInterface> => {
     const { materialID, materialName, materialCategory, purchaseQuantity, purchaseDate, purchaseID, purchaseLocation, supplierName, paymentMethod } = manualData
 
-    const manualDataProcessed: ProcessedData = {
+    const manualDataProcessed: ProcessedDataInterface = {
         materialID,
         materialCategory,
         materialName,
@@ -38,10 +38,10 @@ const processManualData = async (manualData: CreateProcessedDataDto): Promise<Pr
     return manualDataProcessed
 }
 
-const processMesData = async (mesData: CreateProcessedDataDto): Promise<ProcessedData> => {
+const processMesData = async (mesData: CreateProcessedDataDto): Promise<ProcessedDataInterface> => {
     const { materialID, materialName, materialCategory, materialQuantity, consumptionDate, remainingStock, unitOfMeasure, lotNumber, supplierLotNumber } = mesData
 
-    const mesDataProcessed: ProcessedData = {
+    const mesDataProcessed: ProcessedDataInterface = {
         materialID,
         materialCategory,
         materialName,
@@ -54,10 +54,10 @@ const processMesData = async (mesData: CreateProcessedDataDto): Promise<Processe
     return mesDataProcessed;
 }
 
-const processProjectData = async (projectData: CreateProcessedDataDto): Promise<ProcessedData> => {
+const processProjectData = async (projectData: CreateProcessedDataDto): Promise<ProcessedDataInterface> => {
     const { materialID, materialUsed, materialCategory, usedQuantity, usageDate, projectID, costPerUnit, budgetAllocated } = projectData
 
-    const projectDataProcessed: ProcessedData = {
+    const projectDataProcessed: ProcessedDataInterface = {
         materialID,
         materialCategory,
         materialName: materialUsed,

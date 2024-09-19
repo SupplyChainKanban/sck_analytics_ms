@@ -7,5 +7,4 @@ export interface ProcessedDataToAnalysisInterface {
     materialID: number;
     processedQuantity: number;
     processedDate: Date;
-
 }
