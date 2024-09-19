@@ -4,20 +4,18 @@ import { firstValueFrom } from 'rxjs';
 import { SCK_NATS_SERVICE } from 'src/config';
 import { DataSourceInterface, handleExceptions, ProcessedDataInterface } from 'src/common';
 import { CreateProcessedDataDto, DataAnalysisDto, ProcessDataDto } from './dto';
-import { SourceType, ValidationStatus } from './enums/data.enum';
+import { RawDataPriority, SourceType, ValidationStatus } from './enums/data.enum';
 import { PrismaClient, SourceTypes } from '@prisma/client';
 import { getProcessedData } from 'src/common/helpers/processData';
 import { sum } from 'simple-statistics';
-import { ProcessedDataToAnalysisInterface } from 'src/common/interfaces';
+import { ProcessedDataToAnalysisInterface, LastRegisterInterface, DataAnalysisInterface } from 'src/common/interfaces';
 import { calculateAverageDailyUsed, calculateAverageTimeBetweenPurchases, detectUsedTrend, getRecommendation } from 'src/common/helpers';
 
 @Injectable()
 export class AnalyticsService extends PrismaClient implements OnModuleInit {
   private readonly logger = new Logger('AnalyticsService');
 
-  constructor(
-    @Inject(SCK_NATS_SERVICE) private readonly client: ClientProxy
-  ) {
+  constructor(@Inject(SCK_NATS_SERVICE) private readonly client: ClientProxy) {
     super()
   }
 
@@ -32,7 +30,140 @@ export class AnalyticsService extends PrismaClient implements OnModuleInit {
       const rawData = await firstValueFrom(this.client.send({ cmd: 'findOneRawData' }, { id: rawDataId }))
       const dataSource: DataSourceInterface = rawData.dataSource;
       const processedData: ProcessedDataInterface = await getProcessedData(dataSource, validatedData)
+      const id = await this.createProcessedData(rawDataId, dataSource, priority, processedData)
 
+      this.client.emit('update.validationResult.status', { id: validationResultId, status: ValidationStatus.PROCESSED })
+      this.emitDataAnalysis(id, dataSource, processedData)
+      return;
+    } catch (error) {
+      this.client.emit('update.validationResult.status', { id: validationResultId, status: ValidationStatus.NOT_PROCESSED })
+      handleExceptions(error, this.logger)
+    }
+  }
+
+  async runAnalysis(dataAnalysisDto: DataAnalysisDto) {
+    const { materialID, materialName, processedDate, dataSource, processedDataId } = dataAnalysisDto;
+    const totalData: ProcessedDataToAnalysisInterface[] = await this.findManyProcessedData(materialID)
+    const lastRegister: LastRegisterInterface = await this.findLastRegister(materialID);
+    const dataToAnalyze: DataAnalysisInterface = {
+      totalQuantityUsed: lastRegister?.totalQuantityUsed || 0,
+      totalQuantityPurchased: lastRegister?.totalQuantityPurchased || 0,
+      lastPurchasedDate: lastRegister?.lastPurchasedDate || null,
+      avgDailyUsed: lastRegister?.avgDailyUsed || 0,
+      usedTrend: lastRegister?.usedTrend || null,
+      avgTimeBetweenPurchases: lastRegister?.avgTimeBetweenPurchases || 0,
+      recommendation: lastRegister?.recommendation || '',
+    }
+
+    switch (dataSource) {
+      case SourceType.MANUAL:
+        dataToAnalyze.totalQuantityPurchased = await this.calculateTotalQuantity(materialID, dataSource);
+        dataToAnalyze.lastPurchasedDate = await this.findLastPurchasedDate(materialID);
+        dataToAnalyze.avgTimeBetweenPurchases = calculateAverageTimeBetweenPurchases(totalData);
+        break;
+      case SourceType.MES:
+        dataToAnalyze.totalQuantityUsed = await this.calculateTotalQuantity(materialID, dataSource);
+        dataToAnalyze.avgDailyUsed = calculateAverageDailyUsed(totalData, dataToAnalyze.totalQuantityUsed)
+        dataToAnalyze.usedTrend = detectUsedTrend(totalData);
+        dataToAnalyze.recommendation = getRecommendation(dataToAnalyze.usedTrend, dataToAnalyze.avgDailyUsed);
+        break;
+      case SourceType.PROJECT:
+        dataToAnalyze.totalQuantityUsed = await this.calculateTotalQuantity(materialID, dataSource);
+        dataToAnalyze.avgDailyUsed = calculateAverageDailyUsed(totalData, dataToAnalyze.totalQuantityUsed)
+        dataToAnalyze.usedTrend = detectUsedTrend(totalData);
+        dataToAnalyze.recommendation = getRecommendation(dataToAnalyze.usedTrend, dataToAnalyze.avgDailyUsed);
+        break;
+      default:
+        break;
+    }
+
+    await this.createDataAnalytics(materialID, materialName, processedDate, processedDataId, dataToAnalyze);
+    //* 4. Se enviará el emit para poder realizar la predicción dándole las variables necesarias para poder realizar la predicción
+
+
+    return dataAnalysisDto;
+  }
+
+
+  private async calculateTotalQuantity(materialID: number, dataSource: SourceTypes): Promise<number> {
+    try {
+      const quantity = await this.processedData.aggregate({
+        _sum: { processedQuantity: true },
+        where: { materialID, sourceType: dataSource }
+      })
+      // const totalquantity = sum(quantity.map((data) => data.processedQuantity))
+      return quantity._sum.processedQuantity;
+    } catch (error) {
+      handleExceptions(error, this.logger)
+    }
+  }
+
+  private async findLastRegister(materialID: number): Promise<LastRegisterInterface> {
+    try {
+      return await this.dataAnalytics.findFirst({
+        where: { materialID: materialID },
+        orderBy: { processedDate: 'desc' },
+        select: {
+          totalQuantityUsed: true,
+          totalQuantityPurchased: true,
+          lastPurchasedDate: true,
+          avgDailyUsed: true,
+          usedTrend: true,
+          avgTimeBetweenPurchases: true,
+          recommendation: true,
+        }
+      })
+    } catch (error) {
+      handleExceptions(error, this.logger)
+    }
+  }
+
+  private async findManyProcessedData(materialID: number): Promise<ProcessedDataToAnalysisInterface[]> {
+    try {
+      return await this.processedData.findMany({
+        where: { materialID },
+        orderBy: { processedDate: 'desc' },
+        select: { id: true, sourceType: true, materialID: true, processedQuantity: true, processedDate: true }
+      })
+    } catch (error) {
+      handleExceptions(error, this.logger)
+    }
+  }
+
+  private async findLastPurchasedDate(materialID: number): Promise<Date> {
+    try {
+      const lastPurchased = await this.processedData.findFirst({
+        where: { materialID },
+        orderBy: { processedDate: 'desc' },
+        select: { processedDate: true }
+      })
+      const lastPurchasedDate = lastPurchased.processedDate;
+      return lastPurchasedDate
+    } catch (error) {
+      handleExceptions(error, this.logger)
+    }
+  }
+
+  private async createDataAnalytics(materialID: number, materialName: string, processedDate: Date, processedDataId: string, dataToAnalyze: DataAnalysisInterface): Promise<void> {
+    try {
+      await this.dataAnalytics.create({
+        data: {
+          materialID,
+          materialName,
+          processedDate,
+          ...dataToAnalyze,
+          processedData: {
+            connect: { id: processedDataId }
+          }
+        }
+      })
+    } catch (error) {
+      handleExceptions(error, this.logger)
+    }
+  }
+
+  private async createProcessedData(rawDataId: string, dataSource: DataSourceInterface, priority: RawDataPriority, processedData: ProcessedDataInterface): Promise<string> {
+    try {
       const { id } = await this.processedData.create({
         data: {
           rawDataId,
@@ -44,8 +175,14 @@ export class AnalyticsService extends PrismaClient implements OnModuleInit {
           id: true,
         }
       })
+      return id;
+    } catch (error) {
+      handleExceptions(error, this.logger)
+    }
+  }
 
-      this.client.emit('update.validationResult.status', { id: validationResultId, status: ValidationStatus.PROCESSED })
+  private emitDataAnalysis(id: string, dataSource: DataSourceInterface, processedData: ProcessedDataInterface) {
+    try {
       this.client.emit('dataAnalysis', {
         processedDataId: id,
         dataSource: dataSource.sourceType,
@@ -53,141 +190,10 @@ export class AnalyticsService extends PrismaClient implements OnModuleInit {
         materialName: processedData.materialName,
         processedDate: processedData.processedDate,
       });
-      return;
     } catch (error) {
-      this.client.emit('update.validationResult.status', { id: validationResultId, status: ValidationStatus.NOT_PROCESSED })
       handleExceptions(error, this.logger)
     }
   }
-
-  async runAnalysis(dataAnalysisDto: DataAnalysisDto) {
-    const { materialID, materialName, processedDate, dataSource, processedDataId } = dataAnalysisDto;
-
-    const lastRegister = await this.dataAnalytics.findFirst({
-      where: {
-        materialID: materialID,
-      },
-      orderBy: {
-        processedDate: 'desc'
-      },
-      select: {
-        totalQuantityUsed: true,
-        totalQuantityPurchased: true,
-        lastPurchasedDate: true,
-        avgDailyUsed: true,
-        usedTrend: true,
-        avgTimeBetweenPurchases: true,
-        recommendation: true,
-      }
-    })
-    console.log({ lastRegister });
-    let totalQuantityUsed: number = lastRegister?.totalQuantityUsed || 0;
-    let totalQuantityPurchased: number = lastRegister?.totalQuantityPurchased || 0;
-    let lastPurchasedDate: Date | null = lastRegister?.lastPurchasedDate || null;
-    let avgDailyUsed: number = lastRegister?.avgDailyUsed || 0;
-    let usedTrend: string | null = lastRegister?.usedTrend || null;
-    let avgTimeBetweenPurchases: number = lastRegister?.avgTimeBetweenPurchases || 0;
-    let recommendation: string | null = lastRegister?.recommendation || '';
-
-
-    console.log({ totalQuantityUsed, totalQuantityPurchased, lastPurchasedDate, avgDailyUsed, usedTrend, avgTimeBetweenPurchases, recommendation });
-
-    //* 1. Obtener los registros históricos del material
-    const totalData: ProcessedDataToAnalysisInterface[] = await this.processedData.findMany({
-      where: { materialID },
-      orderBy: { processedDate: 'desc' },
-      select: { id: true, sourceType: true, materialID: true, processedQuantity: true, processedDate: true }
-    })
-
-    //* 5. 
-
-    switch (dataSource) {
-      case SourceType.MANUAL:
-        totalQuantityPurchased = await this.calculateTotalQuantity(materialID, dataSource);
-        lastPurchasedDate = (await this.processedData.findFirst({
-          where: { materialID },
-          orderBy: { processedDate: 'desc' },
-          select: { processedDate: true }
-        })).processedDate
-        //* 4. Calcular la frecuencia promedio de compras 
-        avgTimeBetweenPurchases = calculateAverageTimeBetweenPurchases(totalData);
-        console.log({ avgTimeBetweenPurchases })
-        break;
-      case SourceType.MES:
-        totalQuantityUsed = await this.calculateTotalQuantity(materialID, dataSource);
-        //* 2. Calcular el consumo promedio diario
-        avgDailyUsed = calculateAverageDailyUsed(totalData, totalQuantityUsed)
-
-        //* 3. Calcular la tendencia de consumo
-        usedTrend = detectUsedTrend(totalData);
-        recommendation = getRecommendation(usedTrend, avgDailyUsed);
-
-        break;
-      case SourceType.PROJECT:
-        totalQuantityUsed = await this.calculateTotalQuantity(materialID, dataSource);
-        //* 2. Calcular el consumo promedio diario
-        avgDailyUsed = calculateAverageDailyUsed(totalData, totalQuantityUsed)
-        //* 3. Calcular la tendencia de consumo
-        usedTrend = detectUsedTrend(totalData);
-        recommendation = getRecommendation(usedTrend, avgDailyUsed);
-
-        break;
-      default:
-        break;
-    }
-
-    console.log({ totalQuantityUsed, totalQuantityPurchased, lastPurchasedDate, avgDailyUsed, usedTrend, avgTimeBetweenPurchases, recommendation });
-    //* 3. Se creará el registro de la tabla de DataAnalysis
-    await this.dataAnalytics.create({
-      data: {
-        materialID,
-        materialName,
-        processedDate,
-
-        totalQuantityUsed,
-        totalQuantityPurchased,
-        lastPurchasedDate,
-        avgDailyUsed,
-        usedTrend,
-        avgTimeBetweenPurchases,
-        recommendation,
-
-        processedData: {
-          connect: {
-            id: processedDataId,
-          }
-        }
-      }
-    })
-
-    //* 4. Se enviará el emit para poder realizar la predicción dándole las variables necesarias para poder realizar la predicción
-
-
-
-
-
-    return dataAnalysisDto;
-  }
-
-
-  //* Cálculo de la cantidad comprada
-  private async calculateTotalQuantity(materialID: number, dataSource: SourceTypes): Promise<number> {
-    const quantity = await this.processedData.aggregate({
-      _sum: {
-        processedQuantity: true,
-      },
-      where: { materialID, sourceType: dataSource }
-    })
-    // const totalquantity = sum(quantity.map((data) => data.processedQuantity))
-    return quantity._sum.processedQuantity;
-  }
-
-
-
-
-
-
-
 
 
 
