@@ -78,10 +78,7 @@ export class AnalyticsService extends PrismaClient implements OnModuleInit {
     }
 
     await this.createDataAnalytics(materialID, materialName, processedDate, processedDataId, dataToAnalyze);
-    //* 4. Se enviará el emit para poder realizar la predicción dándole las variables necesarias para poder realizar la predicción
-
-
-    return dataAnalysisDto;
+    this.client.emit('generate.prediction', { materialID, dataToAnalyze })
   }
 
 
