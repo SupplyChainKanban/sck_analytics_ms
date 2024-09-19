@@ -72,6 +72,7 @@ model dataAnalytics {
   lastPurchasedDate         DateTime?
   usedTrend                 String?
   avgTimeBetweenPurchases   Float @default(0)
+  recommendation            String @default("")
 
 
   processedDate             DateTime

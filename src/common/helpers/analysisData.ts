@@ -2,7 +2,18 @@ import { linearRegression, linearRegressionLine } from "simple-statistics";
 import { ProcessedDataToAnalysisInterface } from "../interfaces";
 import { SourceType } from "src/analytics/enums/data.enum";
 
-
+export const getRecommendation = (usedTrend: string, avgDailyUsed: number): string => {
+    switch (usedTrend) {
+        case 'increasing':
+            return `Reabastecer inventario pronto porque el consumo diario promedio es de ${avgDailyUsed} unidades.`
+        case 'decreasing':
+            return `Revisar la demanda porque el consumo ha disminuido`
+        case 'stable':
+            return `Mantener el inventario actual`
+        default:
+            return '';
+    }
+}
 
 export const calculateAverageTimeBetweenPurchases = (totalData: ProcessedDataToAnalysisInterface[]): number => {
     let totalDays = 0;

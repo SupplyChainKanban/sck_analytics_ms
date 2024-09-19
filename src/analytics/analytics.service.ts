@@ -9,7 +9,7 @@ import { PrismaClient, SourceTypes } from '@prisma/client';
 import { getProcessedData } from 'src/common/helpers/processData';
 import { sum } from 'simple-statistics';
 import { ProcessedDataToAnalysisInterface } from 'src/common/interfaces';
-import { calculateAverageDailyUsed, calculateAverageTimeBetweenPurchases, detectUsedTrend } from 'src/common/helpers';
+import { calculateAverageDailyUsed, calculateAverageTimeBetweenPurchases, detectUsedTrend, getRecommendation } from 'src/common/helpers';
 
 @Injectable()
 export class AnalyticsService extends PrismaClient implements OnModuleInit {
@@ -77,6 +77,7 @@ export class AnalyticsService extends PrismaClient implements OnModuleInit {
         avgDailyUsed: true,
         usedTrend: true,
         avgTimeBetweenPurchases: true,
+        recommendation: true,
       }
     })
     console.log({ lastRegister });
@@ -86,9 +87,10 @@ export class AnalyticsService extends PrismaClient implements OnModuleInit {
     let avgDailyUsed: number = lastRegister?.avgDailyUsed || 0;
     let usedTrend: string | null = lastRegister?.usedTrend || null;
     let avgTimeBetweenPurchases: number = lastRegister?.avgTimeBetweenPurchases || 0;
+    let recommendation: string | null = lastRegister?.recommendation || '';
 
 
-    console.log({ totalQuantityUsed, totalQuantityPurchased, lastPurchasedDate, avgDailyUsed, usedTrend, avgTimeBetweenPurchases });
+    console.log({ totalQuantityUsed, totalQuantityPurchased, lastPurchasedDate, avgDailyUsed, usedTrend, avgTimeBetweenPurchases, recommendation });
 
     //* 1. Obtener los registros históricos del material
     const totalData: ProcessedDataToAnalysisInterface[] = await this.processedData.findMany({
@@ -118,6 +120,7 @@ export class AnalyticsService extends PrismaClient implements OnModuleInit {
 
         //* 3. Calcular la tendencia de consumo
         usedTrend = detectUsedTrend(totalData);
+        recommendation = getRecommendation(usedTrend, avgDailyUsed);
 
         break;
       case SourceType.PROJECT:
@@ -126,13 +129,14 @@ export class AnalyticsService extends PrismaClient implements OnModuleInit {
         avgDailyUsed = calculateAverageDailyUsed(totalData, totalQuantityUsed)
         //* 3. Calcular la tendencia de consumo
         usedTrend = detectUsedTrend(totalData);
+        recommendation = getRecommendation(usedTrend, avgDailyUsed);
 
         break;
       default:
         break;
     }
 
-    console.log({ totalQuantityUsed, totalQuantityPurchased, lastPurchasedDate, avgDailyUsed, usedTrend, avgTimeBetweenPurchases });
+    console.log({ totalQuantityUsed, totalQuantityPurchased, lastPurchasedDate, avgDailyUsed, usedTrend, avgTimeBetweenPurchases, recommendation });
     //* 3. Se creará el registro de la tabla de DataAnalysis
     await this.dataAnalytics.create({
       data: {
@@ -140,12 +144,12 @@ export class AnalyticsService extends PrismaClient implements OnModuleInit {
         materialName,
         processedDate,
 
-
         totalQuantityUsed,
         totalQuantityPurchased,
         lastPurchasedDate,
         avgDailyUsed,
         usedTrend,
+        recommendation,
 
         processedData: {
           connect: {
