@@ -1,4 +1,40 @@
+import { linearRegression, linearRegressionLine } from "simple-statistics";
 import { ProcessedDataToAnalysisInterface } from "../interfaces";
+import { SourceType } from "src/analytics/enums/data.enum";
+
+
+
+export const calculateAverageTimeBetweenPurchases = (totalData: ProcessedDataToAnalysisInterface[]): number => {
+    let totalDays = 0;
+    const totalManualData = totalData.filter((data) => {
+        return data.sourceType === SourceType.MANUAL
+    })
+
+    for (let i = 1; i < totalManualData.length; i++) {
+        totalDays += getDaysBetween(new Date(totalManualData[i].processedDate), new Date(totalManualData[i - 1].processedDate));
+    }
+    const avgTimeBetweenPurchases = (totalDays / (totalManualData.length - 1)).toFixed(2)
+
+    return +avgTimeBetweenPurchases
+};
+
+export const detectUsedTrend = (totalData: ProcessedDataToAnalysisInterface[]): string => {
+    if (totalData.length <= 2) return `Not enough data to calculate trend`
+
+    const dates = totalData.map((data) => data.processedDate.getTime()).reverse()
+    const quantities = totalData.map((data) => data.processedQuantity).reverse()
+
+    const regression = linearRegression(dates.map((date, index) => [date, quantities[index]]))
+    const trend = linearRegressionLine(regression);
+    const slope = regression.m;
+
+    if (slope > 0) {
+        return 'increasing';
+    } else if (slope < 0) {
+        return 'decreasing';
+    }
+    return 'stable'
+}
 
 
 

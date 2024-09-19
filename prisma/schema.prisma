@@ -70,6 +70,8 @@ model dataAnalytics {
   totalQuantityPurchased    Int
   avgDailyUsed              Int @default(0)
   lastPurchasedDate         DateTime?
+  usedTrend                 String?
+  avgTimeBetweenPurchases   Float @default(0)
 
 
   processedDate             DateTime
