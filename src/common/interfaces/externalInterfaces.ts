@@ -17,6 +17,7 @@ export interface ProcessedDataInterface {
     remainingStock?: number,
     unitOfMeasure?: string,
     costPerUnit?: number,
+    totalCost?: number,
     projectID?: number,
     budgetAllocated?: number,
 }

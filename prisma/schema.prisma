@@ -46,6 +46,7 @@ model processedData {
   remainingStock    Int?
   unitOfMeasure     String?
   costPerUnit       Float?
+  totalCost       Float?
   projectID         Int?
   budgetAllocated   Float?
 

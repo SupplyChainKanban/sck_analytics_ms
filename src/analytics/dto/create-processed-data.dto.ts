@@ -83,6 +83,11 @@ export class CreateProcessedDataDto {
     @IsNotEmpty()
     @IsOptional()
     @IsNumber()
+    public totalCost?: number;// Costo por unidad del material utilizado
+
+    @IsNotEmpty()
+    @IsOptional()
+    @IsNumber()
     public budgetAllocated?: number;// Presupuesto asignado para el material del proyecto
 
     @IsNotEmpty()

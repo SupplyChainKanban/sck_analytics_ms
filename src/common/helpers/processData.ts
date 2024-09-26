@@ -24,7 +24,7 @@ export const getProcessedData = async (dataSource: DataSourceInterface, validate
 }
 
 const processManualData = async (manualData: CreateProcessedDataDto): Promise<ProcessedDataInterface> => {
-    const { materialID, materialName, materialCategory, purchaseQuantity, purchaseDate, purchaseID, purchaseLocation, supplierName, paymentMethod } = manualData
+    const { materialID, materialName, materialCategory, purchaseQuantity, purchaseDate, purchaseID, costPerUnit, totalCost, unitOfMeasure, purchaseLocation, supplierName, paymentMethod } = manualData
     const processedDate = purchaseDate.split('/');
 
     const manualDataProcessed: ProcessedDataInterface = {
@@ -33,6 +33,9 @@ const processManualData = async (manualData: CreateProcessedDataDto): Promise<Pr
         materialName,
         processedQuantity: purchaseQuantity,
         processedDate: new Date(+processedDate[2], +processedDate[1] - 1, +processedDate[0]),
+        costPerUnit,
+        totalCost,
+        unitOfMeasure,
         purchaseID,
     }
 
@@ -58,7 +61,7 @@ const processMesData = async (mesData: CreateProcessedDataDto): Promise<Processe
 }
 
 const processProjectData = async (projectData: CreateProcessedDataDto): Promise<ProcessedDataInterface> => {
-    const { materialID, materialUsed, materialCategory, usedQuantity, usageDate, projectID, costPerUnit, budgetAllocated } = projectData
+    const { materialID, materialUsed, materialCategory, usedQuantity, usageDate, projectID, costPerUnit, totalCost, unitOfMeasure, budgetAllocated } = projectData
     const processedDate = usageDate.split('/');
 
     const projectDataProcessed: ProcessedDataInterface = {
@@ -68,6 +71,8 @@ const processProjectData = async (projectData: CreateProcessedDataDto): Promise<
         processedQuantity: usedQuantity,
         processedDate: new Date(+processedDate[2], +processedDate[1] - 1, +processedDate[0]),
         costPerUnit,
+        totalCost,
+        unitOfMeasure,
         projectID,
         budgetAllocated,
     }
