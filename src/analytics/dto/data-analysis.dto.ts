@@ -11,7 +11,7 @@ export class DataAnalysisDto {
 
     @IsNotEmpty()
     @IsNumber()
-    public materialID: number;
+    public materialID: string;
 
     @IsNotEmpty()
     @IsString()

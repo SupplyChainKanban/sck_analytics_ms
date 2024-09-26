@@ -36,10 +36,10 @@ model processedData {
   rawDataId         String
   sourceType        SourceTypes
 
-  materialID        Int
+  materialID        String
   materialCategory  String
   materialName      String
-  processedQuantity Int
+  processedQuantity Float
   processedDate     DateTime
 
   purchaseID        Int? 
@@ -56,19 +56,17 @@ model processedData {
   dataAnalytics   dataAnalytics?
 }
 
-//TODO: Añadir la tabla de AnalysisData
-
 model dataAnalytics {
 
   id                        String @id @default(uuid())
 
-  materialID                Int
+  materialID                String
   materialName              String
 
 
-  totalQuantityUsed         Int
-  totalQuantityPurchased    Int
-  avgDailyUsed              Int @default(0)
+  totalQuantityUsed         Float
+  totalQuantityPurchased    Float
+  avgDailyUsed              Float @default(0)
   lastPurchasedDate         DateTime?
   usedTrend                 String?
   avgTimeBetweenPurchases   Float @default(0)

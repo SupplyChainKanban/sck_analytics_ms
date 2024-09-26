@@ -25,13 +25,14 @@ export const getProcessedData = async (dataSource: DataSourceInterface, validate
 
 const processManualData = async (manualData: CreateProcessedDataDto): Promise<ProcessedDataInterface> => {
     const { materialID, materialName, materialCategory, purchaseQuantity, purchaseDate, purchaseID, purchaseLocation, supplierName, paymentMethod } = manualData
+    const processedDate = purchaseDate.split('/');
 
     const manualDataProcessed: ProcessedDataInterface = {
         materialID,
         materialCategory,
         materialName,
         processedQuantity: purchaseQuantity,
-        processedDate: new Date(purchaseDate),
+        processedDate: new Date(+processedDate[2], +processedDate[1] - 1, +processedDate[0]),
         purchaseID,
     }
 
@@ -40,13 +41,15 @@ const processManualData = async (manualData: CreateProcessedDataDto): Promise<Pr
 
 const processMesData = async (mesData: CreateProcessedDataDto): Promise<ProcessedDataInterface> => {
     const { materialID, materialName, materialCategory, materialQuantity, consumptionDate, remainingStock, unitOfMeasure, lotNumber, supplierLotNumber } = mesData
+    const processedDate = consumptionDate.split('/');
+
 
     const mesDataProcessed: ProcessedDataInterface = {
         materialID,
         materialCategory,
         materialName,
         processedQuantity: materialQuantity,
-        processedDate: new Date(consumptionDate),
+        processedDate: new Date(+processedDate[2], +processedDate[1] - 1, +processedDate[0]),
         remainingStock,
         unitOfMeasure,
     }
@@ -56,13 +59,14 @@ const processMesData = async (mesData: CreateProcessedDataDto): Promise<Processe
 
 const processProjectData = async (projectData: CreateProcessedDataDto): Promise<ProcessedDataInterface> => {
     const { materialID, materialUsed, materialCategory, usedQuantity, usageDate, projectID, costPerUnit, budgetAllocated } = projectData
+    const processedDate = usageDate.split('/');
 
     const projectDataProcessed: ProcessedDataInterface = {
         materialID,
         materialCategory,
         materialName: materialUsed,
         processedQuantity: usedQuantity,
-        processedDate: new Date(usageDate),
+        processedDate: new Date(+processedDate[2], +processedDate[1] - 1, +processedDate[0]),
         costPerUnit,
         projectID,
         budgetAllocated,

@@ -82,7 +82,7 @@ export class AnalyticsService extends PrismaClient implements OnModuleInit {
   }
 
 
-  private async calculateTotalQuantity(materialID: number, dataSource: SourceTypes): Promise<number> {
+  private async calculateTotalQuantity(materialID: string, dataSource: SourceTypes): Promise<number> {
     try {
       const quantity = await this.processedData.aggregate({
         _sum: { processedQuantity: true },
@@ -95,7 +95,7 @@ export class AnalyticsService extends PrismaClient implements OnModuleInit {
     }
   }
 
-  private async findLastRegister(materialID: number): Promise<LastRegisterInterface> {
+  private async findLastRegister(materialID: string): Promise<LastRegisterInterface> {
     try {
       return await this.dataAnalytics.findFirst({
         where: { materialID: materialID },
@@ -115,7 +115,7 @@ export class AnalyticsService extends PrismaClient implements OnModuleInit {
     }
   }
 
-  private async findManyProcessedData(materialID: number): Promise<ProcessedDataToAnalysisInterface[]> {
+  private async findManyProcessedData(materialID: string): Promise<ProcessedDataToAnalysisInterface[]> {
     try {
       return await this.processedData.findMany({
         where: { materialID },
@@ -127,7 +127,7 @@ export class AnalyticsService extends PrismaClient implements OnModuleInit {
     }
   }
 
-  private async findLastPurchasedDate(materialID: number): Promise<Date> {
+  private async findLastPurchasedDate(materialID: string): Promise<Date> {
     try {
       const lastPurchased = await this.processedData.findFirst({
         where: { materialID },
@@ -141,7 +141,7 @@ export class AnalyticsService extends PrismaClient implements OnModuleInit {
     }
   }
 
-  private async createDataAnalytics(materialID: number, materialName: string, processedDate: Date, processedDataId: string, dataToAnalyze: DataAnalysisInterface): Promise<void> {
+  private async createDataAnalytics(materialID: string, materialName: string, processedDate: Date, processedDataId: string, dataToAnalyze: DataAnalysisInterface): Promise<void> {
     try {
       await this.dataAnalytics.create({
         data: {

@@ -7,7 +7,7 @@ export interface DataSourceInterface {
 }
 
 export interface ProcessedDataInterface {
-    materialID: number,
+    materialID: string,
     materialCategory: string,
     materialName: string,
     processedQuantity: number, //* Cantidad procesada: Comprada o consumida
