@@ -44,7 +44,6 @@ export class AnalyticsService extends PrismaClient implements OnModuleInit {
 
   async runAnalysis(dataAnalysisDto: DataAnalysisDto) {
     const { materialID, materialName, processedDate, dataSource, processedDataId } = dataAnalysisDto;
-    console.log("LLegué a run Analysis")
     const totalData: ProcessedDataToAnalysisInterface[] = await this.findManyProcessedData(materialID)
     const lastRegister: LastRegisterInterface = await this.findLastRegister(materialID);
     const dataToAnalyze: DataAnalysisInterface = {
@@ -86,12 +85,14 @@ export class AnalyticsService extends PrismaClient implements OnModuleInit {
 
   private async calculateTotalQuantity(materialID: string, dataSource: SourceTypes): Promise<number> {
     try {
+      const sourceTypes = (dataSource === SourceType.MANUAL) ? [SourceType.MANUAL] : [SourceType.MES, SourceType.PROJECT]
       const quantity = await this.processedData.aggregate({
         _sum: { processedQuantity: true },
-        where: { materialID, sourceType: dataSource }
+        where: { materialID, sourceType: { in: sourceTypes } }
       })
-      // const totalquantity = sum(quantity.map((data) => data.processedQuantity))
+
       return quantity._sum.processedQuantity;
+      // const totalquantity = sum(quantity.map((data) => data.processedQuantity))
     } catch (error) {
       handleExceptions(error, this.logger)
     }

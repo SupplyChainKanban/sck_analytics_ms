@@ -23,6 +23,7 @@ export const calculateAverageTimeBetweenPurchases = (totalData: ProcessedDataToA
     for (let i = 1; i < totalManualData.length; i++) {
         totalDays += getDaysBetween(new Date(totalManualData[i].processedDate), new Date(totalManualData[i - 1].processedDate));
     }
+    if (totalManualData.length <= 1) return 0;
     const avgTimeBetweenPurchases = (totalDays / (totalManualData.length - 1)).toFixed(2)
 
     return +avgTimeBetweenPurchases
