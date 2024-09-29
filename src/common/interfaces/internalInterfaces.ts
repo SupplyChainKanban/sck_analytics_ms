@@ -18,6 +18,7 @@ export interface LastRegisterInterface {
     usedTrend: string;
     avgTimeBetweenPurchases: number;
     recommendation: string;
+    daysSinceLastPurchase: number;
 }
 
 
@@ -29,4 +30,5 @@ export interface DataAnalysisInterface {
     usedTrend: string | null;
     avgTimeBetweenPurchases: number;
     recommendation: string | null;
+    daysSinceLastPurchase: number;
 }

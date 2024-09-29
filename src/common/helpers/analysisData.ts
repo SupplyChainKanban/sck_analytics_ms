@@ -24,10 +24,15 @@ export const calculateAverageTimeBetweenPurchases = (totalData: ProcessedDataToA
         totalDays += getDaysBetween(new Date(totalManualData[i].processedDate), new Date(totalManualData[i - 1].processedDate));
     }
     if (totalManualData.length <= 1) return 0;
-    const avgTimeBetweenPurchases = (totalDays / (totalManualData.length - 1)).toFixed(2)
+    const avgTimeBetweenPurchases = (totalDays / (totalManualData.length - 1)).toFixed(4)
 
     return +avgTimeBetweenPurchases
 };
+
+export const calculateDaysSinceLastPurchase = (lastPurchasedDate: Date, processedDate: Date): number => {
+    const days = getDaysBetween(new Date(lastPurchasedDate), new Date(processedDate));
+    return days;
+}
 
 export const detectUsedTrend = (totalData: ProcessedDataToAnalysisInterface[]): string => {
     if (totalData.length <= 2) return `Not enough data to calculate trend`
@@ -48,6 +53,9 @@ export const detectUsedTrend = (totalData: ProcessedDataToAnalysisInterface[]): 
 
 export const calculateAverageDailyUsed = (totalData: ProcessedDataToAnalysisInterface[], totalQuantityUsed: number): number => {
     const totalDays = getTotalDaysBetween(totalData)
-    return Math.round(totalQuantityUsed / totalDays);
+    if (totalDays <= 0) return totalQuantityUsed;
+    const avgDailyUsed = (totalQuantityUsed / totalDays).toFixed(4)
+    return +avgDailyUsed
+
 }
 

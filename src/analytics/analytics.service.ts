@@ -9,7 +9,7 @@ import { PrismaClient, SourceTypes } from '@prisma/client';
 import { getProcessedData } from 'src/common/helpers/processData';
 import { sum } from 'simple-statistics';
 import { ProcessedDataToAnalysisInterface, LastRegisterInterface, DataAnalysisInterface } from 'src/common/interfaces';
-import { calculateAverageDailyUsed, calculateAverageTimeBetweenPurchases, detectUsedTrend, getRecommendation } from 'src/common/helpers';
+import { calculateAverageDailyUsed, calculateAverageTimeBetweenPurchases, calculateDaysSinceLastPurchase, detectUsedTrend, getRecommendation } from 'src/common/helpers';
 
 @Injectable()
 export class AnalyticsService extends PrismaClient implements OnModuleInit {
@@ -51,28 +51,36 @@ export class AnalyticsService extends PrismaClient implements OnModuleInit {
       totalQuantityPurchased: lastRegister?.totalQuantityPurchased || 0,
       lastPurchasedDate: lastRegister?.lastPurchasedDate || null,
       avgDailyUsed: lastRegister?.avgDailyUsed || 0,
-      usedTrend: lastRegister?.usedTrend || null,
+      usedTrend: lastRegister?.usedTrend || 'Not enough data to calculate trend',
       avgTimeBetweenPurchases: lastRegister?.avgTimeBetweenPurchases || 0,
       recommendation: lastRegister?.recommendation || '',
+      daysSinceLastPurchase: lastRegister?.daysSinceLastPurchase || null,
     }
+    let prevLastPurchasedDate: Date;
 
     switch (dataSource) {
       case SourceType.MANUAL:
+        prevLastPurchasedDate = dataToAnalyze.lastPurchasedDate;
         dataToAnalyze.totalQuantityPurchased = await this.calculateTotalQuantity(materialID, dataSource);
         dataToAnalyze.lastPurchasedDate = await this.findLastPurchasedDate(materialID);
         dataToAnalyze.avgTimeBetweenPurchases = calculateAverageTimeBetweenPurchases(totalData);
+        dataToAnalyze.daysSinceLastPurchase = !!prevLastPurchasedDate ? calculateDaysSinceLastPurchase(prevLastPurchasedDate, dataToAnalyze.lastPurchasedDate) : 0;
         break;
       case SourceType.MES:
+        prevLastPurchasedDate = dataToAnalyze.lastPurchasedDate;
         dataToAnalyze.totalQuantityUsed = await this.calculateTotalQuantity(materialID, dataSource);
         dataToAnalyze.avgDailyUsed = calculateAverageDailyUsed(totalData, dataToAnalyze.totalQuantityUsed)
         dataToAnalyze.usedTrend = detectUsedTrend(totalData);
         dataToAnalyze.recommendation = getRecommendation(dataToAnalyze.usedTrend, dataToAnalyze.avgDailyUsed);
+        dataToAnalyze.daysSinceLastPurchase = !!prevLastPurchasedDate ? calculateDaysSinceLastPurchase(prevLastPurchasedDate, processedDate) : 0;
         break;
       case SourceType.PROJECT:
+        prevLastPurchasedDate = dataToAnalyze.lastPurchasedDate;
         dataToAnalyze.totalQuantityUsed = await this.calculateTotalQuantity(materialID, dataSource);
         dataToAnalyze.avgDailyUsed = calculateAverageDailyUsed(totalData, dataToAnalyze.totalQuantityUsed)
         dataToAnalyze.usedTrend = detectUsedTrend(totalData);
         dataToAnalyze.recommendation = getRecommendation(dataToAnalyze.usedTrend, dataToAnalyze.avgDailyUsed);
+        dataToAnalyze.daysSinceLastPurchase = !!prevLastPurchasedDate ? calculateDaysSinceLastPurchase(prevLastPurchasedDate, processedDate) : 0;
         break;
       default:
         break;
@@ -102,7 +110,7 @@ export class AnalyticsService extends PrismaClient implements OnModuleInit {
     try {
       return await this.dataAnalytics.findFirst({
         where: { materialID: materialID },
-        orderBy: { processedDate: 'desc' },
+        orderBy: { analysisDate: 'desc' },
         select: {
           totalQuantityUsed: true,
           totalQuantityPurchased: true,
@@ -111,6 +119,7 @@ export class AnalyticsService extends PrismaClient implements OnModuleInit {
           usedTrend: true,
           avgTimeBetweenPurchases: true,
           recommendation: true,
+          daysSinceLastPurchase: true,
         }
       })
     } catch (error) {

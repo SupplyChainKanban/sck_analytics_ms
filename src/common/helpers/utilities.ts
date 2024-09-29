@@ -7,6 +7,7 @@ export const getTotalDaysBetween = (totalData: ProcessedDataToAnalysisInterface[
 }
 
 export const getDaysBetween = (startDate: Date, endDate: Date): number => {
+    console.log({ startDate, endDate })
     const DAY_IN_MILLISECONDS = 1000 * 60 * 60 * 24
     const differenceMs = Math.abs(startDate.getTime() - endDate.getTime());
     return Math.round(differenceMs / DAY_IN_MILLISECONDS);
