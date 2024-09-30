@@ -10,7 +10,7 @@ export class DataAnalysisDto {
     public dataSource: SourceTypes;
 
     @IsNotEmpty()
-    @IsNumber()
+    @IsString()
     public materialID: string;
 
     @IsNotEmpty()
@@ -25,4 +25,13 @@ export class DataAnalysisDto {
     @IsNotEmpty()
     @IsDate()
     public processedDate: Date;
+
+    @IsNotEmpty()
+    @IsNumber()
+    public purchaseInEvent: number;
+
+    @IsNotEmpty()
+    @IsNumber()
+    public usageInEvent: number;
+
 }

@@ -30,7 +30,6 @@ export class AnalyticsService extends PrismaClient implements OnModuleInit {
       const rawData = await firstValueFrom(this.client.send({ cmd: 'findOneRawData' }, { id: rawDataId }))
       const dataSource: DataSourceInterface = rawData.dataSource;
       const processedData: ProcessedDataInterface = await getProcessedData(dataSource, validatedData)
-      console.log({ processedData })
       const id = await this.createProcessedData(rawDataId, dataSource, priority, processedData)
 
       this.client.emit('update.validationResult.status', { id: validationResultId, status: ValidationStatus.PROCESSED })
@@ -43,7 +42,7 @@ export class AnalyticsService extends PrismaClient implements OnModuleInit {
   }
 
   async runAnalysis(dataAnalysisDto: DataAnalysisDto) {
-    const { materialID, materialName, processedDate, dataSource, processedDataId } = dataAnalysisDto;
+    const { materialID, materialName, processedDate, dataSource, processedDataId, purchaseInEvent, usageInEvent } = dataAnalysisDto;
     const totalData: ProcessedDataToAnalysisInterface[] = await this.findManyProcessedData(materialID)
     const lastRegister: LastRegisterInterface = await this.findLastRegister(materialID);
     const dataToAnalyze: DataAnalysisInterface = {
@@ -87,7 +86,7 @@ export class AnalyticsService extends PrismaClient implements OnModuleInit {
     }
 
     await this.createDataAnalytics(materialID, materialName, processedDate, processedDataId, dataToAnalyze);
-    this.client.emit('generate.prediction', { materialID, dataToAnalyze })
+    this.client.emit('generate.prediction', { materialID, dataToAnalyze, purchaseInEvent, usageInEvent })
   }
 
 
@@ -198,6 +197,8 @@ export class AnalyticsService extends PrismaClient implements OnModuleInit {
         materialID: processedData.materialID,
         materialName: processedData.materialName,
         processedDate: processedData.processedDate,
+        purchaseInEvent: (dataSource.sourceType === SourceType.MANUAL) ? processedData.processedQuantity : 0,
+        usageInEvent: (dataSource.sourceType !== SourceType.MANUAL) ? processedData.processedQuantity : 0,
       });
     } catch (error) {
       handleExceptions(error, this.logger)
