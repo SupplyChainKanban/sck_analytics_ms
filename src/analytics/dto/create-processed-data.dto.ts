@@ -9,7 +9,7 @@ export class CreateProcessedDataDto {
     // public rawDataId: string;
 
     @IsNotEmpty()
-    @IsNumber()
+    @IsString()
     public materialID: string;
 
     @IsNotEmpty()
@@ -20,6 +20,7 @@ export class CreateProcessedDataDto {
     @IsString()
     @IsOptional()
     public materialName?: string;
+
     @IsNotEmpty()
     @IsString()
     @IsOptional()
@@ -102,17 +103,19 @@ export class CreateProcessedDataDto {
 
     @IsNotEmpty()
     @IsOptional()
-    @IsDate()
+    @IsString()
     public consumptionDate?: string; //Fecha y hora de consumo de material
 
     @IsNotEmpty()
     @IsOptional()
-    @IsDate()
+    // @IsDate()
+    @IsString()
     public usageDate?: string;// Fecha y hora de uso del material
 
     @IsNotEmpty()
     @IsOptional()
-    @IsDate()
+    // @IsDate()
+    @IsString()
     public purchaseDate?: string;// Fecha y hora de la compra
 
     // @IsNotEmpty()

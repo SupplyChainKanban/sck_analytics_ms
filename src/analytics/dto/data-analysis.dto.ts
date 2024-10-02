@@ -1,6 +1,7 @@
 import { SourceTypes } from "@prisma/client";
 import { IsDate, IsEnum, IsNotEmpty, IsNumber, IsString, IsUUID } from "class-validator";
 import { sourceTypesList } from "../enums/data.enum";
+import { Type } from "class-transformer";
 
 export class DataAnalysisDto {
 
@@ -24,6 +25,7 @@ export class DataAnalysisDto {
 
     @IsNotEmpty()
     @IsDate()
+    @Type(() => Date)
     public processedDate: Date;
 
     @IsNotEmpty()
