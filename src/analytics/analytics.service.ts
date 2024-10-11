@@ -1,5 +1,5 @@
-import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { ClientProxy } from '@nestjs/microservices';
+import { HttpStatus, Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { ClientProxy, RpcException } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
 import { SCK_NATS_SERVICE } from 'src/config';
 import { DataSourceInterface, handleExceptions, ProcessedDataInterface } from 'src/common';
@@ -244,6 +244,27 @@ export class AnalyticsService extends PrismaClient implements OnModuleInit {
       return { data, meta: { page, totalRecords, lastPage } };
     } catch (error) {
       handleExceptions(error, this.logger)
+    }
+  }
+
+  async findOne(id: string) {
+    try {
+      const dataAnalized = await this.dataAnalytics.findFirst({
+        where: { id: id },
+        select: {
+          materialName: true,
+        }
+      })
+      if (!dataAnalized) {
+        throw new RpcException({
+          message: `Data Source with id ${id} not found`,
+          status: HttpStatus.NOT_FOUND,
+        })
+      }
+
+      return dataAnalized;
+    } catch (error) {
+      handleExceptions(error, this.logger);
     }
   }
 

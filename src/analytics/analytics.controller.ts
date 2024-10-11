@@ -1,4 +1,4 @@
-import { Controller } from '@nestjs/common';
+import { Controller, ParseUUIDPipe } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { AnalyticsService } from './analytics.service';
 import { DataAnalysisDto, PaginationDto, ProcessDataDto } from './dto';
@@ -21,6 +21,13 @@ export class AnalyticsController {
   findAll(@Payload() paginationDto: PaginationDto) {
     return this.analyticsService.findAll(paginationDto);
   }
+
+  @MessagePattern('findOneDataAnalytics')
+  findOne(@Payload('id', ParseUUIDPipe) id: string) {
+    return this.analyticsService.findOne(id);
+  }
+
+
 
 
 }
