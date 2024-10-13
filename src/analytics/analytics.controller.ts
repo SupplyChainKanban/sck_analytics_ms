@@ -26,8 +26,4 @@ export class AnalyticsController {
   findOne(@Payload('id', ParseUUIDPipe) id: string) {
     return this.analyticsService.findOne(id);
   }
-
-
-
-
 }

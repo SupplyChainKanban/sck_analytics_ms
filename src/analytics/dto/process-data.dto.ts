@@ -27,7 +27,6 @@ export class ProcessDataDto {
             }
             return JSON.parse(value);
         } catch (error) {
-            // console.log({ ErrorParseo: error })
             throw new RpcException({ status: HttpStatus.BAD_REQUEST, message: 'Invalid JSON format for dataPayload' })
         }
     })

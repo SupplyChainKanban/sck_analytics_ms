@@ -1,12 +1,8 @@
 // import { RawDataPriority } from "@prisma/client";
 
-import { IsDate, IsNotEmpty, IsNumber, IsOptional, IsString, IsUUID } from "class-validator";
+import { IsNotEmpty, IsNumber, IsOptional, IsString, IsUUID } from "class-validator";
 
 export class CreateProcessedDataDto {
-    // @IsNotEmpty()
-    // @IsString()
-    // @IsUUID()
-    // public rawDataId: string;
 
     @IsNotEmpty()
     @IsString()
@@ -117,8 +113,4 @@ export class CreateProcessedDataDto {
     // @IsDate()
     @IsString()
     public purchaseDate?: string;// Fecha y hora de la compra
-
-    // @IsNotEmpty()
-    // @IsString()
-    // public priority: string;
 }

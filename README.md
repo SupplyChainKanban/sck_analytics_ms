@@ -20,9 +20,17 @@
   <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
 </p>
 
-# Data Analytics Service
+# Microservicio de procesamiento y análisis de datos
 
-## Ambiente de desarrollo
+En este microservicio, se reciben los datos validados para que se pueda procesar la información que viene en el payload de la petición. Una vez procesada e ingresada a la base de datos, se procede a realizar su análisis para enviar ese análisis al microservicio de predicción.
+
+## Flujo de datos
+
+![](/diagrams/Ms_analysis.drawio.png)
+
+## Despliegue
+
+### Ambiente de desarrollo
 
 1. Clonar el repositorio
 2. Instalar dependencias
