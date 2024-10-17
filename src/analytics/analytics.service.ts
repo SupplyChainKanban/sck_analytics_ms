@@ -3,17 +3,16 @@ import { ClientProxy, RpcException } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
 import { SCK_NATS_SERVICE } from 'src/config';
 import { DataSourceInterface, handleExceptions, ProcessedDataInterface } from 'src/common';
-import { CreateProcessedDataDto, DataAnalysisDto, PaginationDto, ProcessDataDto } from './dto';
+import { DataAnalysisDto, PaginationDto, ProcessDataDto } from './dto';
 import { RawDataPriority, SourceType, ValidationStatus } from './enums/data.enum';
 import { PrismaClient, SourceTypes } from '@prisma/client';
 import { getProcessedData } from 'src/common/helpers/processData';
-import { sum } from 'simple-statistics';
 import { ProcessedDataToAnalysisInterface, LastRegisterInterface, DataAnalysisInterface } from 'src/common/interfaces';
 import { calculateAverageDailyUsed, calculateAverageTimeBetweenPurchases, calculateDaysSinceLastPurchase, detectUsedTrend, getRecommendation } from 'src/common/helpers';
 
 @Injectable()
 export class AnalyticsService extends PrismaClient implements OnModuleInit {
-  private readonly logger = new Logger('AnalyticsService');
+  private readonly logger = new Logger(AnalyticsService.name);
 
   constructor(@Inject(SCK_NATS_SERVICE) private readonly client: ClientProxy) {
     super()
